@@ -70,7 +70,8 @@ Task("Deploy")
             SiteName = siteName,
             ComputerName = deployUrl,
             Username = userName,
-            Password = deployPassword
+            Password = deployPassword,
+            UseAppOffline = true
         });
     });
 

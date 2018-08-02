@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "material-design-icons-iconfont": "^3.0.3",
+    "vuetify": "^1.1.9"
+  }
+}
