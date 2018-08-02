@@ -15,8 +15,8 @@ var deployUrl = "https://betc0.a2hosted.com:8172/msdeploy.axd?site=betc0.a2hoste
 //////////////////////////////////////////////////////////////////////
 
 // Define directories.
-var binaryDir = Directory("./BetCore/bin") + Directory (configuration);
-var objectDir = Directory("./BetCore/obj");
+var binaryDir = Directory("./BetVue.Web.Mvc/bin") + Directory (configuration);
+var objectDir = Directory("./BetVue.Web.Mvc/obj");
 var publishDir = Directory("./publish");
 
 //////////////////////////////////////////////////////////////////////
@@ -48,14 +48,16 @@ Task ("Publish")
     .IsDependentOn("Build")
     .Does (() => {
         var settings = new DotNetCorePublishSettings {
-        Framework = "netcoreapp2.0",
+        Framework = "netcoreapp2.0", 
         Configuration = configuration,
         OutputDirectory = publishDir,
         Runtime = "win-x64",
-		SelfContained = true
-        };
+        SelfContained = true
+        
+        };       
+        
 
-        DotNetCorePublish ("BetCore", settings);
+        DotNetCorePublish ("BetVue.Web.Mvc", settings);
     });
 
 Task("Deploy")
