@@ -7,7 +7,8 @@ import { sync } from 'vuex-router-sync';
 import App from 'components/app-root';
 
 Vue.prototype.$http = axios;
-Vue.use(Vuetify);
+Vue.use(Vuetify,{
+});
 
 sync(store, router)
 

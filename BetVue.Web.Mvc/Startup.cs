@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Insight.Database;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.SpaServices.Webpack;
@@ -15,11 +12,12 @@ namespace BetVue.Web.Mvc
     {
         public Startup(IHostingEnvironment env)
         {
+            SqlInsightDbProvider.RegisterProvider();
             var builder = new ConfigurationBuilder()
-                .SetBasePath(env.ContentRootPath)
-                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-                .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true)
-                .AddEnvironmentVariables();
+                    .SetBasePath(env.ContentRootPath)
+                    .AddJsonFile("appsettings.json", true, true)
+                    .AddJsonFile($"appsettings.{env.EnvironmentName}.json", true)
+                    .AddEnvironmentVariables();
             Configuration = builder.Build();
         }
 
@@ -29,6 +27,7 @@ namespace BetVue.Web.Mvc
         public void ConfigureServices(IServiceCollection services)
         {
             // Add framework services.
+            services.AddTransient<IDbInsight>(d=>new DbInsight(Configuration));
             services.AddMvc();
         }
 
@@ -43,7 +42,7 @@ namespace BetVue.Web.Mvc
                 app.UseDeveloperExceptionPage();
                 app.UseWebpackDevMiddleware(new WebpackDevMiddlewareOptions
                 {
-                    HotModuleReplacement = true
+                        HotModuleReplacement = true
                 });
             }
             else
@@ -56,12 +55,12 @@ namespace BetVue.Web.Mvc
             app.UseMvc(routes =>
             {
                 routes.MapRoute(
-                    name: "default",
-                    template: "{controller=Home}/{action=Index}/{id?}");
+                        "default",
+                        "{controller=Home}/{action=Index}/{id?}");
 
                 routes.MapSpaFallbackRoute(
-                    name: "spa-fallback",
-                    defaults: new { controller = "Home", action = "Index" });
+                        "spa-fallback",
+                        new {controller = "Home", action = "Index"});
             });
         }
     }
