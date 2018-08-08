@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Globalization;
 using System.Linq;
 using Insight.Database;
@@ -24,19 +23,9 @@ namespace BetVue.Web.Mvc.Controllers
             _db = db;
         }
 
-        private IDbConnection dbConn => _db.Connection;
-
         [HttpGet("[action]")]
         public IEnumerable<WeatherForecast> WeatherForecasts()
         {
-            var gamesForDateInput = new GamesForDateInputParameters();
-            var games             = _db.Connection.Query<GameListItem>("GetGamesForDate", gamesForDateInput);
-
-            var gameStatsInput  = new StatsForGameInput {gameId = 10787343};
-            var gameStatsOutput = new StatsForGameOutputParameters();
-            var stats = _db.Connection.Query<GameStatsItem>("GetStatsForGame", gameStatsInput,
-                    outputParameters: gameStatsOutput);
-
             var rng = new Random();
             return Enumerable.Range(1, 5).Select(index => new WeatherForecast
             {
@@ -46,34 +35,32 @@ namespace BetVue.Web.Mvc.Controllers
             });
         }
 
-        [HttpGet("[action]")]
+        [HttpGet("[action]/{dateIn?}")]
         public GamesForDateOutput GetGamesForDate(string dateIn)
         {
-            var dateParsed = DateTime.Now;
-
-            if (string.IsNullOrWhiteSpace(dateIn) || !DateTime.TryParseExact(dateIn, "dd.MM.yyyy",
-                        CultureInfo.InvariantCulture, DateTimeStyles.None, out dateParsed))
+            if (string.IsNullOrWhiteSpace(dateIn) || !DateTime.TryParseExact(dateIn, "dd-MM-yyyy",
+                        CultureInfo.InvariantCulture, DateTimeStyles.None, out var dateParsed))
                 dateParsed = DateTime.Now;
 
             var input = new GamesForDateInputParameters {dateIn = dateParsed};
 
             var games = _db.Connection.Query<GameListItem>("GetGamesForDate", input).OrderBy(g => g.Date)
-                    .AsEnumerable();
+                    .AsEnumerable().Select(x => new Game(x));
 
             return new GamesForDateOutput
             {
-                    DateFormatted = $"{dateParsed:dd.MM.yyyy}",
-                    Games         = games
+                    Date  = dateParsed,
+                    Games = games
             };
         }
 
         [HttpGet("[action]/{gameId}")]
-        public StatsForGameOutput GetStatsForGame(int gameId,
-                                                  bool? p1 = null,
-                                                  bool? p2 = null,
-                                                  bool? p3 = null,
-                                                  bool? p4 = null,
-                                                  bool? side = null)
+        public Stats GetStatsForGame(int gameId,
+                                     bool? p1 = null,
+                                     bool? p2 = null,
+                                     bool? p3 = null,
+                                     bool? p4 = null,
+                                     bool? side = null)
         {
             var input = new StatsForGameInput
             {
@@ -86,130 +73,111 @@ namespace BetVue.Web.Mvc.Controllers
             };
             var output = new StatsForGameOutputParameters();
             var items = _db.Connection.Query<GameStatsItem>("GetStatsForGame", input, outputParameters: output)
-                    .AsEnumerable();
+                    .GroupBy(g => g.Total).Select(x => x.First()).ToList();
+            var gameLi = _db.Connection.Single<GameListItem>("GetGameForId", new {id = gameId});
 
-            return new StatsForGameOutput
+
+            var stats = new Stats {Game = new Game(gameLi)};
+
+            stats.Rasklad = new GameRasklad
             {
-                    Stats = items,
-                    p1awy = output.p1awy,
-                    p2awy = output.p2awy,
-                    p3awy = output.p3awy,
-                    p4awy = output.p4awy,
-                    ttawy = output.ttawy,
-                    uniq  = output.uniq
+                    PrevUniq = output.uniq,
+                    P1 = new PeriodRasklad
+                    {
+                            Id      = 1,
+                            Name    = "1 четв",
+                            OddAway = output.p1awy,
+                            OddReal = stats.Game.Periods[1].Home > 0 || stats.Game.Periods[1].Away > 0
+                                    ? (bool?) ((stats.Game.Periods[0].Home + stats.Game.Periods[0].Away) % 2 == 1)
+                                    : null,
+                            OddUser = p1,
+                            PeriodStats = items.Select(x => new PeriodStatsItem
+                            {
+                                    Freq = x.P1_Per,
+                                    Perc = x.P1_Avg,
+                                    Sqrt = x.P1_Sqr
+                            }).ToList()
+                    },
+                    P2 = new PeriodRasklad
+                    {
+                            Id      = 2,
+                            Name    = "2 четв",
+                            OddAway = output.p2awy,
+                            OddReal = stats.Game.Periods[2].Home > 0 || stats.Game.Periods[2].Away > 0
+                                    ? (bool?) ((stats.Game.Periods[1].Home + stats.Game.Periods[1].Away) % 2 == 1)
+                                    : null,
+                            OddUser = p2,
+                            PeriodStats = items.Select(x => new PeriodStatsItem
+                            {
+                                    Freq = x.P2_Per,
+                                    Perc = x.P2_Avg,
+                                    Sqrt = x.P2_Sqr
+                            }).ToList()
+                    },
+                    P3 = new PeriodRasklad
+                    {
+                            Id      = 3,
+                            Name    = "3 четв",
+                            OddAway = output.p3awy,
+                            OddReal = stats.Game.Periods[3].Home > 0 || stats.Game.Periods[3].Away > 0
+                                    ? (bool?) ((stats.Game.Periods[2].Home + stats.Game.Periods[2].Away) % 2 == 1)
+                                    : null,
+                            OddUser = p3,
+                            PeriodStats = items.Select(x => new PeriodStatsItem
+                            {
+                                    Freq = x.P3_Per,
+                                    Perc = x.P3_Avg,
+                                    Sqrt = x.P3_Sqr
+                            }).ToList()
+                    },
+                    P4 = new PeriodRasklad
+                    {
+                            Id      = 4,
+                            Name    = "4 четв",
+                            OddAway = output.p4awy,
+                            OddReal = stats.Game.Status == "Завершена"
+                                    ? (bool?) ((stats.Game.Periods[3].Home + stats.Game.Periods[3].Away) % 2 == 1)
+                                    : null,
+                            OddUser = p4,
+                            PeriodStats = items.Select(x => new PeriodStatsItem
+                            {
+                                    Freq = x.P4_Per,
+                                    Perc = x.P4_Avg,
+                                    Sqrt = x.P4_Sqr
+                            }).ToList()
+                    },
+                    TT = new PeriodRasklad
+                    {
+                            Id      = 6,
+                            Name    = "Тотал",
+                            OddAway = output.ttawy,
+                            OddReal = stats.Game.Status == "Завершена"
+                                    ? (bool?) ((stats.Game.Periods[5].Home + stats.Game.Periods[5].Away) % 2 == 1)
+                                    : null,
+                            OddUser = null,
+                            PeriodStats = items.Select(x => new PeriodStatsItem
+                            {
+                                    Freq = x.TT_Per,
+                                    Perc = x.TT_Avg,
+                                    Sqrt = x.TT_Sqr
+                            }).ToList()
+                    }
             };
+
+            for (var i = 0; i < items.Count; i++)
+                stats.Rasklad.Statistics.Add(new GameStatsRow
+                {
+                        Count = items[i].Total,
+                        Descr = items[i].Descr,
+                        P1    = stats.Rasklad.P1.PeriodStats[i],
+                        P2    = stats.Rasklad.P2.PeriodStats[i],
+                        P3    = stats.Rasklad.P3.PeriodStats[i],
+                        P4    = stats.Rasklad.P4.PeriodStats[i],
+                        TT    = stats.Rasklad.TT.PeriodStats[i]
+                });
+            return stats;
         }
 
-        public class StatsForGameOutput
-        {
-            public IEnumerable<GameStatsItem> Stats { get; set; }
-
-            public int uniq { get; set; }
-
-            public int p1awy { get; set; }
-            public int p2awy { get; set; }
-            public int p3awy { get; set; }
-            public int p4awy { get; set; }
-            public int ttawy { get; set; }
-        }
-
-        public class GamesForDateInputParameters
-        {
-            public DateTime? dateIn { get; set; }
-        }
-
-        [Serializable]
-        public class GamesForDateOutput
-        {
-            public string DateFormatted { get; set; }
-
-            public IEnumerable<GameListItem> Games { get; set; }
-        }
-
-        [Serializable]
-        public class GameListItem
-        {
-            public int      Id   { get; set; }
-            public DateTime Date { get; set; }
-            public DateTime UpdD { get; set; }
-            public int      Sc1H { get; set; }
-            public int      Sc1A { get; set; }
-            public int      Sc2H { get; set; }
-            public int      Sc2A { get; set; }
-            public int      Sc3H { get; set; }
-            public int      Sc3A { get; set; }
-            public int      Sc4H { get; set; }
-            public int      Sc4A { get; set; }
-            public int      ScOH { get; set; }
-            public int      ScOA { get; set; }
-            public int      ScTH { get; set; }
-            public int      ScTA { get; set; }
-            public string   Stat { get; set; }
-            public int      CntI { get; set; }
-            public string   CntN { get; set; }
-            public int      LeaI { get; set; }
-            public string   LeaN { get; set; }
-            public int      SeaI { get; set; }
-            public string   SeaN { get; set; }
-            public int      StgI { get; set; }
-            public string   StgN { get; set; }
-            public int      THId { get; set; }
-            public string   THNm { get; set; }
-            public int      TAId { get; set; }
-            public string   TANm { get; set; }
-        }
-
-        public class StatsForGameInput
-        {
-            public int   gameId { get; set; }
-            public bool? p1     { get; set; }
-            public bool? p2     { get; set; }
-            public bool? p3     { get; set; }
-            public bool? p4     { get; set; }
-            public bool? side   { get; set; }
-            public int?  uniq   { get; set; } = null;
-            public int?  p1awy  { get; set; } = null;
-            public int?  p2awy  { get; set; } = null;
-            public int?  p3awy  { get; set; } = null;
-            public int?  p4awy  { get; set; } = null;
-            public int?  ttawy  { get; set; } = null;
-        }
-
-        public class StatsForGameOutputParameters
-        {
-            public int uniq  { get; set; }
-            public int p1awy { get; set; }
-            public int p2awy { get; set; }
-            public int p3awy { get; set; }
-            public int p4awy { get; set; }
-            public int ttawy { get; set; }
-        }
-
-        public class GameStatsItem
-        {
-            public  string Descr  { get; set; }
-            public  int    Total  { get; set; }
-            public  float  P1_Avg { get; set; }
-            public  float  P1_Sqr { get; set; }
-            public  int    P1_Awy { get; set; }
-            public  float  P1_Per { get; set; }
-            public  float  P2_Avg { get; set; }
-            public  float  P2_Sqr { get; set; }
-            public  int    P2_Awy { get; set; }
-            public  float  P2_Per { get; set; }
-            public  float  P3_Avg { get; set; }
-            public  float  P3_Sqr { get; set; }
-            public  int    P3_Awy { get; set; }
-            public  float  P3_Per { get; set; }
-            public  float  P4_Avg { get; set; }
-            public  float  P4_Sqr { get; set; }
-            public  int    P4_Awy { get; set; }
-            public  float  P4_Per { get; set; }
-            public  float  TT_Avg { get; set; }
-            public  float  TT_Sqr { get; set; }
-            public  int    TT_Awy { get; set; }
-            public float  TT_Per { get; set; }
-        }
 
         public class WeatherForecast
         {
