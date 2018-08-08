@@ -6,7 +6,7 @@
             </div>
         </template>
         <div v-if="game">
-        <h3>{{ game.stage.title }}</h3><h3 class="pull-right">{{ game.dateStart | moment("DD.MM.YYYY HH:mm") }}</h3>
+            <h3>{{ game.stage.title }}</h3>
         <table class="table table-striped ">
             <thead>
                 <tr>
