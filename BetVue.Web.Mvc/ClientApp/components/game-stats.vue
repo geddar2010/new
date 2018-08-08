@@ -18,8 +18,6 @@
                     <th>4</th>
                     <th>OT</th>
                     <th>TT</th>
-                    <th>Статус</th>
-                    <th>Обновление</th>
                 </tr>
             </thead>
             <tbody>
@@ -32,8 +30,16 @@
                     <td>{{ game.periods[3].home }} : {{ game.periods[3].away }}</td>
                     <td>{{ game.periods[4].home }} : {{ game.periods[4].away }}</td>
                     <td>{{ game.periods[5].home }} : {{ game.periods[5].away }}</td>
-                    <td>{{ game.status }}</td>
-                    <td>{{ game.dateUpdate | moment("DD.MM.YYYY HH:mm") }}</td>
+                </tr>
+                <tr>
+                    <td>Уникальность ситуации:{{ rasklad.prevUniq }}</td>
+                    <td>Нечёт игр назад:</td>
+                    <td>{{ rasklad.p1.oddAway }}</td>
+                    <td>{{ rasklad.p2.oddAway }}</td>
+                    <td>{{ rasklad.p3.oddAway }}</td>
+                    <td>{{ rasklad.p4.oddAway }}</td>
+                    <td></td>
+                    <td>{{ rasklad.tt.oddAway }}</td>
                 </tr>
             </tbody>
         </table>
