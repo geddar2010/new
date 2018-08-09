@@ -8,7 +8,7 @@ namespace BetVue.Web.Mvc.Controllers
     {
         public int    Id      { get; set; }
         public string Name    { get; set; }
-        public bool? OddUser { get; set; }
+        public int? OddUser { get; set; }
         public bool? OddReal { get; set; }
         public int   OddAway { get; set; }
 

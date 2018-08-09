@@ -55,20 +55,20 @@ namespace BetVue.Web.Mvc.Controllers
         }
 
         [HttpGet("[action]/{gameId}")]
-        public Stats GetStatsForGame(int gameId,
-                                     bool? p1 = null,
-                                     bool? p2 = null,
-                                     bool? p3 = null,
-                                     bool? p4 = null,
+        public Stats GetStatsForGame(int gameId,[FromQuery]
+                                     int? p1 = null,
+                                     [FromQuery]int? p2 = null,
+                                     [FromQuery]int? p3 = null,
+                                     [FromQuery]int? p4 = null,
                                      bool? side = null)
         {
             var input = new StatsForGameInput
             {
                     gameId = gameId,
-                    p1     = p1,
-                    p2     = p2,
-                    p3     = p3,
-                    p4     = p4,
+                    p1     = p1==null?null:p1==0?(bool?)false:true,
+                    p2     = p2==null?null:p2==0?(bool?)false:true,
+                    p3     = p3==null?null:p3==0?(bool?)false:true,
+                    p4     = p4==null?null:p4==0?(bool?)false:true,
                     side   = side
             };
             var output = new StatsForGameOutputParameters();
