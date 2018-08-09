@@ -35,4 +35,4 @@ export const routes = [{
         display: 'Статистика',
         style: 'glyphicon glyphicon-th-list'
     }
-]
+];

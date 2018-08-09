@@ -76,6 +76,14 @@ namespace BetVue.Web.Mvc.Controllers
                     .GroupBy(g => g.Total).Select(x => x.First()).ToList();
             var gameLi = _db.Connection.Single<GameListItem>("GetGameForId", new {id = gameId});
 
+            if(p1==null) gameLi.Sc1A=gameLi.Sc1H = 0;
+            if(p2==null) gameLi.Sc2A=gameLi.Sc2H = 0;
+            if(p3==null) gameLi.Sc3A=gameLi.Sc3H = 0;
+            if(p4==null) gameLi.Sc4A=gameLi.Sc4H = 0;
+            if(p1==null||p2==null||p3==null||p4==null) gameLi.ScOA=gameLi.ScOH=0;
+
+            gameLi.ScTH = gameLi.Sc1H+gameLi.Sc2H+gameLi.Sc3H+gameLi.Sc4H+gameLi.ScOH;
+            gameLi.ScTA = gameLi.Sc1A+gameLi.Sc2A+gameLi.Sc3A+gameLi.Sc4A+gameLi.ScOA;
 
             var stats = new Stats {Game = new Game(gameLi)};
 
